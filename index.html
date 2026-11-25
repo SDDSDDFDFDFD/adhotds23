@@ -84,12 +84,12 @@ function stopCamera(){
 }
 async function startCamera(){
  stopCamera();
- if (!SESSION || !window.opener){setResult('Buka dari aplikasi utama','Halaman scanner perlu dibuka menggunakan tombol Mulai Scan dari aplikasi absensi.',true);return;}
+ // Kamera dapat diuji langsung; pengiriman absensi tetap memerlukan sesi aplikasi.
  if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia){
   const msg='Buka halaman scanner lewat HTTPS pada browser Chrome/Edge/Safari modern, bukan alamat HTTP.';
   setResult('Kamera tidak tersedia',msg,true);notify('SEKOLAHAPP_QR_CAM_ERROR',{message:msg});return;
  }
- setBadge('Meminta izin kamera...');
+ setBadge('Meminta izin kamera...');document.getElementById('startBtn').disabled=true;
  try{
   stream=await cameraStream();
   video.srcObject=stream;video.hidden=false;
@@ -107,7 +107,7 @@ async function startCamera(){
   const msg = e.name==='NotAllowedError'?'Akses kamera ditolak. Izinkan kamera pada pengaturan situs browser.':
     e.name==='NotFoundError'?'Kamera tidak ditemukan.':
     e.name==='NotReadableError'?'Kamera dipakai aplikasi lain. Tutup aplikasi kamera lain.':(e.message||String(e));
-  setResult('Kamera gagal dibuka',msg,true);notify('SEKOLAHAPP_QR_CAM_ERROR',{message:msg});
+  setResult('Kamera gagal dibuka',msg+' ('+(e.name||'Error')+')',true);notify('SEKOLAHAPP_QR_CAM_ERROR',{message:msg});
  }
 }
 async function decodeFrame(){
@@ -132,7 +132,7 @@ function sendCode(raw){
  cooldown.set(token,now);awaiting.add(token);
  const frame=document.getElementById('reticle');frame.classList.add('hit');setTimeout(()=>frame.classList.remove('hit'),450);
  if(!notify('SEKOLAHAPP_QR_SCAN',{token})){
-  awaiting.delete(token);setResult('Aplikasi utama tidak terhubung','Kembali ke aplikasi utama, login lalu buka scanner melalui tombol Mulai Scan.',true);return;
+  awaiting.delete(token);setResult('QR berhasil terbaca (mode uji)','Tidak disimpan ke Google Sheets. Untuk absensi, buka scanner dari aplikasi utama.');return;
  }
  setResult('Memverifikasi...','Kode QR dikirim ke aplikasi absensi.');
  setTimeout(()=>awaiting.delete(token),9000);
@@ -169,7 +169,7 @@ document.getElementById('photo').addEventListener('change',async e=>{
 });
 window.addEventListener('pagehide',()=>{notify('SEKOLAHAPP_QR_CLOSED');stopCamera();});
 if(SESSION && window.opener){document.getElementById('connectionHint').textContent='Terhubung ke jendela SekolahApp. Absensi diverifikasi dan disimpan oleh aplikasi utama.';}
-else{setResult('Buka dari aplikasi SekolahApp','Halaman ini belum terhubung ke sesi login absensi. Gunakan tombol Mulai Scan dari aplikasi.',true);}
+else{setResult('Mode uji kamera','Klik Mulai kamera. Hasil uji tidak disimpan ke Google Sheets.');document.getElementById('connectionHint').textContent='Mode uji: untuk mencatat absensi, buka scanner dari aplikasi SekolahApp.';}
 // Tidak otomatis meminta izin kamera sebelum ada tindakan langsung dari pengguna.
 </script>
 </body>
